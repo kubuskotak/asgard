@@ -1,2 +1,2 @@
-# asgard
-Core Odin library Codebase Project
+# Asgard
+Core Odin library Codebase Project.
