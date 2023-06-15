@@ -29,3 +29,7 @@ func (d Sqlite3Driver) Open(name string) (conn driver.Conn, err error) {
 	}
 	return
 }
+
+func Sqlite() *Sqlite3Driver {
+	return &Sqlite3Driver{Driver: &sqlite.Driver{}}
+}
