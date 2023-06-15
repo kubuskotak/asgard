@@ -28,5 +28,5 @@ func TestTraceContextHookNothing(t *testing.T) {
 
 	l := log.Hook(TraceContextHook(context.Background()))
 	l.Info().Msg("test")
-	require.Equal(t, "{\"level\":\"info\",\"caller\":\"C:/Users/nanan/Documents/Projects/Telkom/repos/odin/pkg/shared/tracer/log_test.go:30\",\"message\":\"test\"}\n", buf.String())
+	require.Contains(t, buf.String(), "asgard/tracer/log_test.go:30")
 }

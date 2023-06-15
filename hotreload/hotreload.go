@@ -9,17 +9,27 @@ import (
 	"github.com/rs/zerolog"
 )
 
+// Option is Configure type return func.
+type Option = func(c *Options) error
+
 // Options is data structure for hotreload initialize.
 type Options struct {
 	Dirs   []string
 	Logger zerolog.Logger
 }
 
-func Start(opts Options) (func() error, error) {
+func Start(opts ...Option) (func() error, error) {
+	var o = &Options{}
+	for _, opt := range opts {
+		err := opt(o)
+		if err != nil {
+			panic(err)
+		}
+	}
 	var (
+		l      = o.Logger
 		wd, _  = os.Getwd()
-		l      = opts.Logger
-		w, err = NewFileWatcher(opts.Dirs, l)
+		w, err = NewFileWatcher(o.Dirs, o.Logger)
 	)
 	if err != nil {
 		l.Error().Err(err).Msg("initialize hotreload is failed")
@@ -42,4 +52,20 @@ func Start(opts Options) (func() error, error) {
 		}
 	}()
 	return w.Stop, err
+}
+
+// WithDirs will assign to field dirs Configure.
+func WithDirs(dirs []string) Option {
+	return func(c *Options) error {
+		c.Dirs = dirs
+		return nil
+	}
+}
+
+// WithLogger will assign to field logger Configure.
+func WithLogger(log zerolog.Logger) Option {
+	return func(c *Options) error {
+		c.Logger = log
+		return nil
+	}
 }
