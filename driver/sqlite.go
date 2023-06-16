@@ -3,6 +3,7 @@
 package driver
 
 import (
+	"database/sql"
 	"database/sql/driver"
 
 	"modernc.org/sqlite"
@@ -32,4 +33,8 @@ func (d Sqlite3Driver) Open(name string) (conn driver.Conn, err error) {
 
 func Sqlite() *Sqlite3Driver {
 	return &Sqlite3Driver{Driver: &sqlite.Driver{}}
+}
+
+func init() {
+	sql.Register("sqlite3", Sqlite())
 }
