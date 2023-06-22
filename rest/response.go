@@ -67,20 +67,31 @@ type Pagination struct {
 }
 
 // Response holds the response definition for the Response entity.
-type Response[R ResponseConstraint] struct {
+type Response[W RequestConstraint, R ResponseConstraint] struct {
 	Meta       `json:"meta"`
 	Version    `json:"version"`
 	Pagination `json:"pagination,omitempty"`
 	Data       any `json:"data,omitempty"`
-	next       Adapter[R]
+	next       Adapter[W, R]
 }
 
-func (e *Response[R]) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if ver, ok := r.Context().Value(CtxVersion).(Version); ok {
-		e.Version = ver
-	}
-	payload, err := e.next(w, r)
+func (e *Response[W, R]) processRequest(r *http.Request) error {
+	var (
+		zero        W
+		binder, err = Bind(r, &zero)
+	)
 	if err != nil {
+		return err
+	}
+	if err = binder.Validate(); err != nil {
+		return err
+	}
+	*r = *r.WithContext(context.WithValue(r.Context(), CtxPayloadRequest, zero))
+	return nil
+}
+
+func (e *Response[W, R]) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	errFunc := func(err error) {
 		code, ok := r.Context().Value(CtxStatusCode).(int)
 		if !ok || code < 1 {
 			code = http.StatusInternalServerError
@@ -103,6 +114,18 @@ func (e *Response[R]) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	if ver, ok := r.Context().Value(CtxVersion).(Version); ok {
+		e.Version = ver
+	}
+	if err := e.processRequest(r); err != nil {
+		errFunc(err)
+		return
+	}
+	payload, err := e.next(w, r)
+	if err != nil {
+		errFunc(err)
+		return
+	}
 	if pagination, ok := r.Context().Value(CtxPagination).(Pagination); ok {
 		e.Pagination = pagination
 	}
@@ -110,7 +133,7 @@ func (e *Response[R]) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // JSON sends a JSON response with status code.
-func (e *Response[R]) JSON(w http.ResponseWriter, r *http.Request) {
+func (e *Response[W, R]) JSON(w http.ResponseWriter, r *http.Request) {
 	e.Data = make(map[string]any) // reset data struct
 	e.ServeHTTP(w, r)
 	code, ok := r.Context().Value(CtxStatusCode).(int)
@@ -145,7 +168,7 @@ func (e *Response[R]) JSON(w http.ResponseWriter, r *http.Request) {
 }
 
 // CSV sends a CSV format response with status code.
-func (e *Response[R]) CSV(w http.ResponseWriter, r *http.Request) {
+func (e *Response[W, R]) CSV(w http.ResponseWriter, r *http.Request) {
 	e.ServeHTTP(w, r)
 	code, ok := r.Context().Value(CtxStatusCode).(int)
 	if !ok || code < 1 {

@@ -7,18 +7,23 @@ import (
 	"net/http"
 )
 
+// RequestConstraint is custom constraint type adapter request.
+type RequestConstraint interface {
+	any
+}
+
 // ResponseConstraint is custom constraint type adapter response.
 type ResponseConstraint interface {
 	any
 }
 
 // Adapter is wrapper func type for error handler.
-type Adapter[Response ResponseConstraint] func(w http.ResponseWriter, r *http.Request) (Response, error)
+type Adapter[Request RequestConstraint, Response ResponseConstraint] func(w http.ResponseWriter, r *http.Request) (Response, error)
 
 // HandlerAdapter is middleware handler to process error.
-func HandlerAdapter[ResponseType ResponseConstraint](a Adapter[ResponseType]) *Response[ResponseType] {
+func HandlerAdapter[RequestType RequestConstraint, ResponseType ResponseConstraint](a Adapter[RequestType, ResponseType]) *Response[RequestType, ResponseType] {
 	null := make(map[string]any)
-	response := &Response[ResponseType]{
+	response := &Response[RequestType, ResponseType]{
 		Version: Version{
 			Label:  "v1",
 			Number: "0.1.0",
