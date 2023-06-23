@@ -221,11 +221,16 @@ func Paging(r *http.Request, p Pagination) {
 	*r = *r.WithContext(context.WithValue(r.Context(), CtxPagination, p))
 }
 
+// RequestNotFound request data not found.
+type RequestNotFound struct{}
+
 // ResponseNotFound response data not found.
 type ResponseNotFound struct{}
 
 // NotFoundDefault sets a custom http.HandlerFunc for routing paths that could
 // not be found. The default 404 handler is `http.NotFound`.
-func NotFoundDefault(w http.ResponseWriter, r *http.Request) (ResponseNotFound, error) {
-	return ResponseNotFound{}, ErrNotFound(w, r, errors.New("resource is not found"))
+func NotFoundDefault() http.HandlerFunc {
+	return HandlerAdapter[RequestNotFound](func(w http.ResponseWriter, r *http.Request) (ResponseNotFound, error) {
+		return ResponseNotFound{}, ErrNotFound(w, r, errors.New("resource is not found"))
+	}).JSON
 }
