@@ -79,6 +79,14 @@ func ErrRequestTimeout(w http.ResponseWriter, r *http.Request, err error) error 
 	return err
 }
 
+// ErrStatusConflict error http StatusConflict.
+func ErrStatusConflict(w http.ResponseWriter, r *http.Request, err error) error {
+	*r = *r.WithContext(context.WithValue(r.Context(), CtxStatusCode, http.StatusConflict))
+	w.Header().Set(HeaderContentTypeOptions.String(), "nosniff")
+	w.WriteHeader(http.StatusConflict)
+	return err
+}
+
 // ErrUnsupportedMediaType error http StatusUnsupportedMediaType.
 func ErrUnsupportedMediaType(w http.ResponseWriter, r *http.Request, err error) error {
 	*r = *r.WithContext(context.WithValue(r.Context(), CtxStatusCode, http.StatusUnsupportedMediaType))
