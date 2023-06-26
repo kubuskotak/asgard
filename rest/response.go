@@ -95,6 +95,7 @@ func (e *Response[W, R]) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		code, ok := r.Context().Value(CtxStatusCode).(int)
 		if !ok || code < 1 {
 			code = http.StatusInternalServerError
+			*r = *r.WithContext(context.WithValue(r.Context(), CtxStatusCode, code))
 		}
 		w.Header().Set(HeaderContentType.String(), MIMEApplicationJSON.String())
 		w.Header().Set(HeaderContentTypeOptions.String(), "nosniff")
