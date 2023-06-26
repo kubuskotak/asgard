@@ -74,13 +74,13 @@ func EntInterceptor() ent.Interceptor {
 
 // EntDriver is a driver that logs all driver operations.
 type EntDriver struct {
-	dialect.Driver                                              // underlying driver.
-	log            func(context.Context, zerolog.Level, ...any) // log function. defaults to log.Println.
+	dialect.Driver                                                     // underlying driver.
+	log            func(context.Context, zerolog.Level, string, error) // log function. defaults to log.Println.
 }
 
 // EntDriverWithContext gets a driver and a logging function, and returns
 // a new tracer-driver that prints all outgoing operations with context.
-func EntDriverWithContext(d dialect.Driver, logger func(context.Context, zerolog.Level, ...any)) dialect.Driver {
+func EntDriverWithContext(d dialect.Driver, logger func(context.Context, zerolog.Level, string, error)) dialect.Driver {
 	drv := &EntDriver{d, logger}
 	return drv
 }
@@ -120,7 +120,7 @@ func (d *EntDriver) Query(ctx context.Context, query string, args, v any) error 
 		d.log(ctx, zerolog.ErrorLevel, fmt.Sprintf("driver.Query: query=%v args=%v", query, args), err)
 		return err
 	}
-	d.log(ctx, zerolog.InfoLevel, fmt.Sprintf("driver.Query: query=%v args=%v", query, args))
+	d.log(ctx, zerolog.InfoLevel, fmt.Sprintf("driver.Query: query=%v args=%v", query, args), nil)
 	return nil
 }
 
@@ -139,7 +139,7 @@ func (d *EntDriver) QueryContext(ctx context.Context, query string, args ...any)
 		d.log(ctx, zerolog.ErrorLevel, fmt.Sprintf("driver.QueryContext: query=%v args=%v", query, args), err)
 		return nil, err
 	}
-	d.log(ctx, zerolog.InfoLevel, fmt.Sprintf("driver.QueryContext: query=%v args=%v", query, args))
+	d.log(ctx, zerolog.InfoLevel, fmt.Sprintf("driver.QueryContext: query=%v args=%v", query, args), nil)
 	return rows, nil
 }
 
@@ -150,7 +150,7 @@ func (d *EntDriver) Tx(ctx context.Context) (dialect.Tx, error) {
 		return nil, err
 	}
 	id := uuid.New().String()
-	d.log(ctx, zerolog.InfoLevel, fmt.Sprintf("driver.Tx(%s): started", id))
+	d.log(ctx, zerolog.InfoLevel, fmt.Sprintf("driver.Tx(%s): started", id), nil)
 	return &Tx{tx, id, d.log, ctx}, nil
 }
 
@@ -170,16 +170,16 @@ func (d *EntDriver) BeginTx(ctx context.Context, opts *sql.TxOptions) (dialect.T
 		return nil, err
 	}
 	id := uuid.New().String()
-	d.log(ctx, zerolog.InfoLevel, fmt.Sprintf("driver.BeginTx(%s): started", id))
+	d.log(ctx, zerolog.InfoLevel, fmt.Sprintf("driver.BeginTx(%s): started", id), nil)
 	return &Tx{tx, id, d.log, ctx}, nil
 }
 
 // Tx is a transaction implementation that logs all transaction operations.
 type Tx struct {
-	dialect.Tx                                              // underlying transaction.
-	id         string                                       // transaction logging id.
-	log        func(context.Context, zerolog.Level, ...any) // log function. defaults to fmt.Println.
-	ctx        context.Context                              // underlying transaction context.
+	dialect.Tx                                                     // underlying transaction.
+	id         string                                              // transaction logging id.
+	log        func(context.Context, zerolog.Level, string, error) // log function. defaults to fmt.Println.
+	ctx        context.Context                                     // underlying transaction context.
 }
 
 // Exec logs its params and calls the underlying transaction Exec method.
@@ -188,7 +188,7 @@ func (d *Tx) Exec(ctx context.Context, query string, args, v any) error {
 		d.log(ctx, zerolog.ErrorLevel, fmt.Sprintf("Tx(%s).Exec: query=%v args=%v", d.id, query, args), err)
 		return err
 	}
-	d.log(ctx, zerolog.InfoLevel, fmt.Sprintf("Tx(%s).Exec: query=%v args=%v", d.id, query, args))
+	d.log(ctx, zerolog.InfoLevel, fmt.Sprintf("Tx(%s).Exec: query=%v args=%v", d.id, query, args), nil)
 	return nil
 }
 
@@ -202,7 +202,7 @@ func (d *Tx) ExecContext(ctx context.Context, query string, args ...any) (sql.Re
 		d.log(ctx, zerolog.ErrorLevel, fmt.Sprintf("Tx(%s).Exec: query=%v args=%v", d.id, query, args), err)
 		return nil, err
 	}
-	d.log(ctx, zerolog.InfoLevel, fmt.Sprintf("Tx(%s).ExecContext: query=%v args=%v", d.id, query, args))
+	d.log(ctx, zerolog.InfoLevel, fmt.Sprintf("Tx(%s).ExecContext: query=%v args=%v", d.id, query, args), nil)
 	return drv.ExecContext(ctx, query, args...)
 }
 
@@ -212,7 +212,7 @@ func (d *Tx) Query(ctx context.Context, query string, args, v any) error {
 		d.log(ctx, zerolog.ErrorLevel, fmt.Sprintf("Tx(%s).Exec: query=%v args=%v", d.id, query, args), err)
 		return err
 	}
-	d.log(ctx, zerolog.InfoLevel, fmt.Sprintf("Tx(%s).Query: query=%v args=%v", d.id, query, args))
+	d.log(ctx, zerolog.InfoLevel, fmt.Sprintf("Tx(%s).Query: query=%v args=%v", d.id, query, args), nil)
 	return nil
 }
 
@@ -231,7 +231,7 @@ func (d *Tx) QueryContext(ctx context.Context, query string, args ...any) (*sql.
 		d.log(ctx, zerolog.ErrorLevel, fmt.Sprintf("Tx(%s).Exec: query=%v args=%v", d.id, query, args), err)
 		return nil, err
 	}
-	d.log(ctx, zerolog.InfoLevel, fmt.Sprintf("Tx(%s).QueryContext: query=%v args=%v", d.id, query, args))
+	d.log(ctx, zerolog.InfoLevel, fmt.Sprintf("Tx(%s).QueryContext: query=%v args=%v", d.id, query, args), nil)
 	return row, nil
 }
 
@@ -241,7 +241,7 @@ func (d *Tx) Commit() error {
 		d.log(d.ctx, zerolog.ErrorLevel, fmt.Sprintf("Tx(%s): committed", d.id), err)
 		return err
 	}
-	d.log(d.ctx, zerolog.InfoLevel, fmt.Sprintf("Tx(%s): committed", d.id))
+	d.log(d.ctx, zerolog.InfoLevel, fmt.Sprintf("Tx(%s): committed", d.id), nil)
 	return nil
 }
 
@@ -251,6 +251,6 @@ func (d *Tx) Rollback() error {
 		d.log(d.ctx, zerolog.ErrorLevel, fmt.Sprintf("Tx(%s): rollbacked", d.id), err)
 		return err
 	}
-	d.log(d.ctx, zerolog.InfoLevel, fmt.Sprintf("Tx(%s): rollbacked", d.id))
+	d.log(d.ctx, zerolog.InfoLevel, fmt.Sprintf("Tx(%s): rollbacked", d.id), nil)
 	return nil
 }
