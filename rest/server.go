@@ -40,7 +40,7 @@ type Server struct {
 // NewServer creates a server.
 func NewServer(opts ...Option) *Server {
 	s := &Server{
-		Host:            "localhost",
+		Host:            "",
 		Port:            "8080",
 		idleTimeout:     30 * time.Second,
 		readTimeout:     10 * time.Second,
