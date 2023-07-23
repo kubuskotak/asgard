@@ -76,10 +76,11 @@ type Response[W RequestConstraint, R ResponseConstraint] struct {
 }
 
 func (e *Response[W, R]) processRequest(r *http.Request) error {
-	var (
-		zero        W
-		binder, err = Bind(r, &zero)
-	)
+	var zero W
+	if &zero == nil {
+		return nil
+	}
+	var binder, err = Bind(r, &zero)
 	if err != nil {
 		return err
 	}
