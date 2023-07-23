@@ -120,10 +120,16 @@ func (b *Binder[T]) Validate() error {
 }
 
 func bindURLParams(ctx context.Context, v any) error {
-	urls := chi.RouteContext(ctx).URLParams
-	names := urls.Keys
-	values := urls.Values
-	params := map[string][]string{}
+	var ctxChi *chi.Context
+	if ctxChi = chi.RouteContext(ctx); ctxChi == nil {
+		return nil
+	}
+	var (
+		urls   = ctxChi.URLParams
+		names  = urls.Keys
+		values = urls.Values
+		params = map[string][]string{}
+	)
 	for i, name := range names {
 		// skip wildcard key
 		if strings.EqualFold(wildcardPath, name) {
