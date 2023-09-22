@@ -106,12 +106,12 @@ func (e *Response[W, R]) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		b, err := json.Marshal(e)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			log.Error().Err(ErrInternalServerError(w, r, err)).Msg("Marshal")
 			return
 		}
 		_, err = w.Write(b)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			log.Error().Err(ErrInternalServerError(w, r, err)).Msg("Write")
 			return
 		}
 		return
@@ -155,7 +155,6 @@ func (e *Response[W, R]) JSON(w http.ResponseWriter, r *http.Request) {
 
 	if err := enc.Encode(e); err != nil {
 		log.Error().Err(ErrInternalServerError(w, r, err)).Msg("JSON")
-		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -163,7 +162,6 @@ func (e *Response[W, R]) JSON(w http.ResponseWriter, r *http.Request) {
 
 	if _, err := w.Write(buf.Bytes()); err != nil {
 		log.Error().Err(ErrInternalServerError(w, r, err)).Msg("JSON")
-		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	return
