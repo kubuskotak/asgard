@@ -186,15 +186,13 @@ func (e *Response[W, R]) CSV(w http.ResponseWriter, r *http.Request) {
 		xCsv := csv.NewWriter(buf)
 		for _, row := range data.Rows {
 			if err := xCsv.Write(row); err != nil {
-				w.Header().Set(HeaderContentTypeOptions.String(), "nosniff")
-				w.WriteHeader(http.StatusInternalServerError)
+				log.Error().Err(ErrInternalServerError(w, r, err)).Msg("xCsv.Write")
 				return
 			}
 		}
 		xCsv.Flush()
 		if err := xCsv.Error(); err != nil {
-			w.Header().Set(HeaderContentTypeOptions.String(), "nosniff")
-			w.WriteHeader(http.StatusInternalServerError)
+			log.Error().Err(ErrInternalServerError(w, r, err)).Msg("xCsv.Error")
 			return
 		}
 		w.Header().Set(HeaderContentDesc.String(), "File Transfer")
@@ -204,8 +202,7 @@ func (e *Response[W, R]) CSV(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(code)
 
 		if _, err := w.Write(buf.Bytes()); err != nil {
-			w.Header().Set(HeaderContentTypeOptions.String(), "nosniff")
-			w.WriteHeader(http.StatusInternalServerError)
+			log.Error().Err(ErrInternalServerError(w, r, err)).Msg("Write")
 			return
 		}
 		return
